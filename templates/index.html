@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<html lang="pt-BR">
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trilha Cloud</title>
@@ -10,9 +12,11 @@
             margin: 20px;
             background-color: #f4f4f4;
         }
+
         h1 {
             text-align: center;
         }
+
         .container {
             max-width: 1100px;
             margin: 0 auto;
@@ -21,15 +25,18 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         input[type="file"] {
             margin-bottom: 20px;
         }
+
         .image-preview {
             display: flex;
             align-items: center;
             justify-content: space-around;
             margin-top: 20px;
         }
+
         .image-box {
             border: 2px dashed #ccc;
             width: 300px;
@@ -39,6 +46,7 @@
             justify-content: center;
             margin-right: 20px;
         }
+
         .image-box-response {
             border: 2px dashed #ccc;
             width: 600px;
@@ -46,19 +54,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden; /* Para garantir que a imagem não ultrapasse o contêiner */
+            overflow: hidden;
+            /* Para garantir que a imagem não ultrapasse o contêiner */
         }
+
         .image-box-response img {
             max-width: 100%;
             max-height: 100%;
-            object-fit: contain; /* Mantém a proporção da imagem dentro do contêiner */
-            display: none; /* Mantém a imagem oculta até que ela seja carregada */
+            object-fit: contain;
+            /* Mantém a proporção da imagem dentro do contêiner */
+            display: none;
+            /* Mantém a imagem oculta até que ela seja carregada */
         }
+
         .image-box img {
             max-width: 100%;
             max-height: 100%;
             display: none;
         }
+
         button {
             display: block;
             margin: 20px auto;
@@ -69,23 +83,29 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-        th, td {
+
+        th,
+        td {
             padding: 10px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background-color: #4CAF50;
             color: white;
         }
+
         .delete-btn {
             color: red;
             cursor: pointer;
@@ -94,93 +114,102 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h1>Aplicação em nuvem com flask - Trilha Cloud</h1>
-    <input type="file" id="imageInput" accept="image/*">
+    <div class="container">
+        <h1>Aplicação em nuvem com flask - Trilha Cloud</h1>
+        <input type="file" id="imageInput" accept="image/*">
 
-    <div class="image-preview" id="imagePreview">
-        <div class="image-box" id="originalImageBox">
-            <img id="originalImage" alt="Imagem Original">
+        <div class="image-preview" id="imagePreview">
+            <div class="image-box" id="originalImageBox">
+                <img id="originalImage" alt="Imagem Original">
+            </div>
+            <div class="image-box-response" id="responseImageBox">
+                <img id="responseImage" alt="Imagem Resposta">
+            </div>
         </div>
-        <div class="image-box-response" id="responseImageBox">
-            <img id="responseImage" alt="Imagem Resposta">
-        </div>
+
+        <button id="sendButton" style="display: none;">Enviar</button>
+
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>IP</th>
+                    <th>Data/Hora</th>
+                    <th>Imagem</th>
+                    <th>Imagem Processada</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- As linhas serão adicionadas aqui -->
+            </tbody>
+        </table>
     </div>
 
-    <button id="sendButton" style="display: none;">Enviar</button>
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const originalImage = document.getElementById('originalImage');
+        const responseImage = document.getElementById('responseImage');
+        const sendButton = document.getElementById('sendButton');
+        const dataTable = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
 
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>IP</th>
-                <th>Data/Hora</th>
-                <th>Imagem</th>
-                <th>Imagem Processada</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- As linhas serão adicionadas aqui -->
-        </tbody>
-    </table>
-</div>
-
-<script>
-    const imageInput = document.getElementById('imageInput');
-    const originalImage = document.getElementById('originalImage');
-    const responseImage = document.getElementById('responseImage');
-    const sendButton = document.getElementById('sendButton');
-    const dataTable = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-
-    imageInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                originalImage.src = e.target.result;
-                originalImage.style.display = 'block';
-                sendButton.style.display = 'block';
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    originalImage.src = e.target.result;
+                    originalImage.style.display = 'block';
+                    sendButton.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
             }
-            reader.readAsDataURL(file);
+        });
+
+        sendButton.addEventListener('click', function () {
+            const file = imageInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response data:', data); // Log da resposta do servidor
+
+                    // Construir a URL completa da imagem processada
+                    const processedImageUrl = `/image/${data.image_proc}`;
+                    console.log('Processed Image URL:', processedImageUrl); // Log da URL da imagem processada
+
+                    // Show the processed image
+                    responseImage.src = processedImageUrl;
+                    responseImage.style.display = 'block';
+                    console.log('Response Image Element:', responseImage); // Log do elemento de imagem processada
+
+                    // Update the table with IP and DateTime
+                    const newRow = dataTable.insertRow();
+                    newRow.innerHTML = `
+                    <td>${data.ip}</td>
+                    <td>${data.datetime}</td>
+                    <td><img src="${URL.createObjectURL(file)}" alt="Original Image" style="width: 100px; height: auto;"></td>
+                    <td><img src="${processedImageUrl}" alt="Processed Image" style="width: 100px; height: auto;"></td>
+                    <td><button class="delete-btn" onclick="deleteRow(this)">🗑️</button></td>
+                `;
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        function deleteRow(button) {
+            const row = button.parentNode.parentNode;
+            dataTable.deleteRow(row.rowIndex - 1);
         }
-    });
-
-    sendButton.addEventListener('click', function() {
-        const file = imageInput.files[0];
-        const formData = new FormData();
-        formData.append('image', file);
-
-        fetch('/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            // Show the processed image
-            responseImage.src = data.image_proc;
-            responseImage.style.display = 'block';
-
-            // Update the table with IP and DateTime
-            const newRow = dataTable.insertRow();
-            newRow.innerHTML = `
-                <td>${data.ip}</td>
-                <td>${data.datetime}</td>
-                <td><img src="${data.image}" alt="Original Image" style="width: 100px; height: auto;"></td>
-                <td><img src="${data.image_proc}" alt="Processed Image" style="width: 100px; height: auto;"></td>
-                <td><button class="delete-btn" onclick="deleteRow(this)">🗑️</button></td>
-            `;
-        })
-        .catch(error => console.error('Error:', error));
-    });
-
-    function deleteRow(button) {
-        const row = button.parentNode.parentNode;
-        dataTable.deleteRow(row.rowIndex - 1);
-    }
-</script>
+    </script>
 
 
-</body></html>
+</body>
+
+</html>

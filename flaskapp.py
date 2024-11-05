@@ -20,7 +20,7 @@ def index():
 
 @app.route('/image/<filename>')
 def uploaded_file(filename):
-    file = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file = os.path.join(app.config['PROCESSED_FOLDER'], filename)
     return send_file(file)
 
 @app.route('/upload', methods=['POST'])
@@ -75,7 +75,7 @@ def process_image(filepath, filename):
     processed_image_path = os.path.join(app.config['PROCESSED_FOLDER'], filename)
     cv2.imwrite(processed_image_path, cartoon)
 
-    return processed_image_path
+    return filename
 
 
 if __name__ == '__main__':
