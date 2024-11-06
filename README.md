@@ -35,6 +35,11 @@ source venv/bin/activate  # No Windows use `venv\Scripts\activate`
 pip install -r requirements.txt
 ```
 
+### Passo 4: Executar a aplicação
+```bash
+python3 flaskapp.py
+```
+
 ## Uso
 
 1. Acesse [http://localhost:5000](http://localhost:5000) no seu navegador.
