@@ -1,5 +1,6 @@
 import os
 import cv2
+import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
@@ -13,6 +14,19 @@ if not os.path.exists(PROCESSED_FOLDER):
     os.makedirs(PROCESSED_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
+
+def init_db():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS uploads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL,
+            datetime TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
 @app.route('/')
 def index():
@@ -38,9 +52,16 @@ def upload_image():
 
     client_ip = request.remote_addr
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
+    # Salvar no banco de dados
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO uploads (ip, datetime) VALUES (?, ?)', (client_ip, current_time))
+    conn.commit()
+    conn.close()
+
     processed_image_path = process_image(file_path, filename)
-    
+
     print(f'[{current_time}] {client_ip} uploaded {filename} and processed it to {processed_image_path}')
 
     return jsonify({
@@ -50,33 +71,17 @@ def upload_image():
         'image_proc': processed_image_path
     })
 
-    
 def process_image(filepath, filename):
-    # Ler a imagem original
     image = cv2.imread(filepath)
-
-    # Aplicar o filtro de cartoonização
-    # 1. Converter para cinza
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # 2. Aplicar um blur para suavizar a imagem
     gray_blur = cv2.medianBlur(gray, 5)
-
-    # 3. Detectar bordas usando o filtro laplaciano
     edges = cv2.adaptiveThreshold(gray_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
-
-    # 4. Reduzir o ruído com filtro bilateral
     color = cv2.bilateralFilter(image, 9, 300, 300)
-
-    # 5. Combinar bordas e a imagem filtrada para criar o efeito de cartoon
     cartoon = cv2.bitwise_and(color, color, mask=edges)
-
-    # Salvar a imagem processada
     processed_image_path = os.path.join(app.config['PROCESSED_FOLDER'], filename)
     cv2.imwrite(processed_image_path, cartoon)
-
     return filename
 
-
 if __name__ == '__main__':
+    init_db()
     app.run(host='0.0.0.0', debug=True)
