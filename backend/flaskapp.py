@@ -2,10 +2,13 @@ import os
 import cv2
 import sqlite3
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file
 from werkzeug.utils import secure_filename
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
+
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -30,7 +33,7 @@ def init_db():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return "Servidor Flask rodando!"
 
 @app.route('/image/<filename>')
 def uploaded_file(filename):
