@@ -7,7 +7,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS uploads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip TEXT NOT NULL,
-            datetime TEXT NOT NULL
+            datetime TEXT NOT NULL,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL
         )
     ''')
     conn.commit()
