@@ -5,6 +5,7 @@ function App() {
   const [username, setUsername] = useState<string>('')
   const [response, setResponse] = useState<{ image_proc: string, ip: string, datetime: string } | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
+  const [showForm, setShowForm] = useState<boolean>(false)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -32,14 +33,27 @@ function App() {
 
   return (
     <div className="container mx-auto bg-white p-8 rounded-lg shadow-lg">
-      <h1 className="text-center text-2xl font-bold mb-4">Aplicação em nuvem com flask - Trilha Cloud</h1>
-      <form onSubmit={handleSubmit} className="mb-4">
-        <input type="text" placeholder="Nome de Usuário do Telegram" value={username} onChange={(e) => setUsername(e.target.value)} className="block w-full mb-2 p-2 border rounded" required /> {/* Novo campo de entrada */}
-        <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" required />
-        <button type="submit" className="mt-4 w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600" disabled={loading}>
-          {loading ? 'Enviando...' : 'Enviar'}
-        </button>
-      </form>
+      {!showForm ? (
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Bem-vindo ao Serviço de Processamento de Imagens</h1>
+          <p className="mb-4">Para utilizar nosso serviço, você precisa enviar uma mensagem para o nosso bot no Telegram. Siga o tutorial abaixo:</p>
+          <ol className="list-decimal list-inside mb-4 text-center">
+            <li>Abra o Telegram e escaneie o QR code abaixo para acessar o bot.</li>
+            <li>Envie uma mensagem qualquer para o bot.</li>
+            <li>Volte para esta página e insira seu nome de usuário do Telegram.</li>
+          </ol>
+          <img src="/images/qrcode.jpg" alt="QR Code do Bot" className="mx-auto mb-4" />
+          <button onClick={() => setShowForm(true)} className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">Seguir Adiante</button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mb-4">
+          <input type="text" placeholder="Nome de Usuário do Telegram" value={username} onChange={(e) => setUsername(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
+          <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" required />
+          <button type="submit" className="mt-4 w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600" disabled={loading}>
+            {loading ? 'Enviando...' : 'Enviar'}
+          </button>
+        </form>
+      )}
       {loading && (
         <div className="text-center mt-4">
           <div className="loader"></div>
