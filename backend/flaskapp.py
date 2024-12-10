@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from telegram import Bot
 import asyncio
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -20,9 +21,8 @@ if not os.path.exists(PROCESSED_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
 
-# colocar o token do bot e o chat_id
+# colocar o token do bot
 TELEGRAM_BOT_TOKEN = ''
-chat_id = ''
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 def init_db():
@@ -33,8 +33,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip TEXT NOT NULL,
             datetime TEXT NOT NULL,
-            name TEXT NOT NULL,
-            phone TEXT NOT NULL,
+            username TEXT NOT NULL,
         )
     ''')
     conn.commit()
@@ -60,12 +59,15 @@ def upload_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    name = request.form['name']
-    phone = request.form['phone']
+    username = request.form['username'] 
+
+    chat_id = get_chat_id_by_username(username)
+    if not chat_id:
+        return jsonify({'error': 'Username not found in Telegram updates'}), 404
 
     filename = secure_filename(file.filename)
-    user_folder = os.path.join(app.config['UPLOAD_FOLDER'], name)
-    processed_folder = os.path.join(app.config['PROCESSED_FOLDER'], name)
+    user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username)
+    processed_folder = os.path.join(app.config['PROCESSED_FOLDER'], username)
     os.makedirs(user_folder, exist_ok=True)
     os.makedirs(processed_folder, exist_ok=True)
     file_path = os.path.join(user_folder, filename)
@@ -77,14 +79,14 @@ def upload_image():
     # Salvar no banco de dados
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO uploads (ip, datetime, name, phone) VALUES (?, ?, ?, ?)', (client_ip, current_time, name, phone))
+    cursor.execute('INSERT INTO uploads (ip, datetime, username) VALUES (?, ?, ?)', (client_ip, current_time, username))
     conn.commit()
     conn.close()
 
     processed_image_paths = process_images(file_path, filename, processed_folder)
 
     # Enviar imagens processadas via Telegram
-    asyncio.run(send_images_via_telegram(chat_id, processed_image_paths, name, phone))
+    asyncio.run(send_images_via_telegram(chat_id, processed_image_paths))
 
     print(f'[{current_time}] {client_ip} uploaded {filename} and processed it to {processed_image_paths}')
 
@@ -93,7 +95,7 @@ def upload_image():
         'image_proc': processed_image_paths[0],  # Retornar a primeira imagem processada para exibição
         'ip': client_ip,
         'datetime': current_time,
-        'name': name,
+        'username': username,
     })
 
 def process_images(filepath, filename, processed_folder):
@@ -128,9 +130,23 @@ def process_cartoon(image):
     cartoon = cv2.bitwise_and(color, color, mask=edges)
     return cartoon
 
-async def send_images_via_telegram(chat_id, image_paths, name, phone):
+def get_chat_id_by_username(username):
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
+    response = requests.get(url)
+    data = response.json()
+
+    if data['ok']:
+        for result in data['result']:
+            message = result.get('message')
+            if message:
+                from_user = message.get('from')
+                if from_user and from_user.get('username') == username:
+                    return from_user.get('id')
+    return None
+
+async def send_images_via_telegram(chat_id, image_paths):
     async with bot:
-        message = f"{name} - {phone} solicitou o processamento de fotos através do serviço 'Image Processor AiotLab'!. Segue as fotos:"
+        message = f"Obrigado por utilizar do serviço 'Image Processor AiotLab'!. Segue as fotos:"
         await bot.send_message(chat_id=chat_id, text=message)
         for image_path in image_paths:
             await bot.send_photo(chat_id=chat_id, photo=open(image_path, 'rb'))     

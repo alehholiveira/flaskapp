@@ -2,8 +2,7 @@ import { useState } from 'react'
 
 function App() {
   const [file, setFile] = useState<File | null>(null)
-  const [name, setName] = useState<string>('')
-  const [phone, setPhone] = useState<string>('')
+  const [username, setUsername] = useState<string>('')
   const [response, setResponse] = useState<{ image_proc: string, ip: string, datetime: string } | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
@@ -20,8 +19,7 @@ function App() {
     if (file) {
       formData.append('image', file)
     }
-    formData.append('name', name)
-    formData.append('phone', phone)
+    formData.append('username', username)
 
     const res = await fetch('http://localhost:5000/upload', {
       method: 'POST',
@@ -36,8 +34,7 @@ function App() {
     <div className="container mx-auto bg-white p-8 rounded-lg shadow-lg">
       <h1 className="text-center text-2xl font-bold mb-4">Aplicação em nuvem com flask - Trilha Cloud</h1>
       <form onSubmit={handleSubmit} className="mb-4">
-        <input type="text" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
-        <input type="tel" placeholder="Número de Celular" value={phone} onChange={(e) => setPhone(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
+        <input type="text" placeholder="Nome de Usuário do Telegram" value={username} onChange={(e) => setUsername(e.target.value)} className="block w-full mb-2 p-2 border rounded" required /> {/* Novo campo de entrada */}
         <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" required />
         <button type="submit" className="mt-4 w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600" disabled={loading}>
           {loading ? 'Enviando...' : 'Enviar'}

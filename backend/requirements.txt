@@ -3,3 +3,4 @@ opencv-python
 Werkzeug
 flask_cors
 python-telegram-bot
+requests
