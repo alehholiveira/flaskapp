@@ -34,6 +34,7 @@ def init_db():
             ip TEXT NOT NULL,
             datetime TEXT NOT NULL,
             username TEXT NOT NULL,
+            filename TEXT NOT NULL
         )
     ''')
     conn.commit()
@@ -43,12 +44,42 @@ def init_db():
 def index():
     return "Servidor Flask rodando!"
 
-@app.route('/image/processed/<name>/<filename>')
-def uploaded_file(name, filename):
-    file = os.path.join(app.config['PROCESSED_FOLDER'], name, filename)
+@app.route('/image/processed/<username>/<filename>')
+def processed_file(username, filename):
+    file = os.path.join(app.config['PROCESSED_FOLDER'], username, filename)
     if not os.path.exists(file):
         return jsonify({'error': 'File not found'}), 404
     return send_file(file)
+
+@app.route('/image/uploaded/<username>/<filename>')
+def uploaded_file(username, filename):
+    file = os.path.join(app.config['UPLOAD_FOLDER'], username, filename)
+    if not os.path.exists(file):
+        return jsonify({'error': 'File not found'}), 404
+    return send_file(file)
+
+@app.route('/user_images/<username>', methods=['GET'])
+def get_user_images(username):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM uploads WHERE username = ?', (username,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return jsonify({'error': 'No images found for this user'}), 404
+
+    images = []
+    for row in rows:
+        images.append({
+            'id': row[0],
+            'ip': row[1],
+            'datetime': row[2],
+            'username': row[3],
+            'filename': row[4]
+        })
+
+    return jsonify(images)
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
@@ -79,7 +110,7 @@ def upload_image():
     # Salvar no banco de dados
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO uploads (ip, datetime, username) VALUES (?, ?, ?)', (client_ip, current_time, username))
+    cursor.execute('INSERT INTO uploads (ip, datetime, username, filename) VALUES (?, ?, ?, ?)', (client_ip, current_time, username, filename))
     conn.commit()
     conn.close()
 
@@ -97,7 +128,7 @@ def upload_image():
         'datetime': current_time,
         'username': username,
     })
-
+    
 def process_images(filepath, filename, processed_folder):
     image = cv2.imread(filepath)
     processed_image_paths = []

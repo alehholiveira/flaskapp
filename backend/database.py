@@ -8,7 +8,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ip TEXT NOT NULL,
             datetime TEXT NOT NULL,
-            username TEXT NOT NULL
+            username TEXT NOT NULL,
+            filename TEXT NOT NULL
         )
     ''')
     conn.commit()
