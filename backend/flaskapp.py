@@ -40,7 +40,8 @@ def init_db():
             ip TEXT NOT NULL,
             datetime TEXT NOT NULL,
             username TEXT NOT NULL,
-            filename TEXT NOT NULL
+            filename TEXT NOT NULL,
+            chat_id TEXT NOT NULL
         )
     ''')
     conn.commit()
@@ -93,7 +94,7 @@ def upload_image():
     # Salvar no banco de dados
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO uploads (ip, datetime, username, filename) VALUES (?, ?, ?, ?)', (client_ip, current_time, username, filename))
+    cursor.execute('INSERT INTO uploads (ip, datetime, username, filename, chat_id) VALUES (?, ?, ?, ?, ?)', (client_ip, current_time, username, filename, chat_id))
     conn.commit()
     conn.close()
 
@@ -145,6 +146,17 @@ def process_cartoon(image):
     return cartoon
 
 def get_chat_id_by_username(username):
+    # Primeiro, tentar buscar o chat_id no banco de dados
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT chat_id FROM uploads WHERE username = ? LIMIT 1', (username,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return row[0]
+
+    # Se não encontrar no banco de dados, buscar na API do Telegram
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
     response = requests.get(url)
     data = response.json()

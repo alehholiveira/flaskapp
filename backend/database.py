@@ -9,7 +9,8 @@ def init_db():
             ip TEXT NOT NULL,
             datetime TEXT NOT NULL,
             username TEXT NOT NULL,
-            filename TEXT NOT NULL
+            filename TEXT NOT NULL,
+            chat_id TEXT NOT NULL
         )
     ''')
     conn.commit()
