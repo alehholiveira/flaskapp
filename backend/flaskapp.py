@@ -8,9 +8,11 @@ from flask_cors import CORS
 from telegram import Bot
 import asyncio
 import requests
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)
+load_dotenv()
 
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
@@ -21,8 +23,8 @@ if not os.path.exists(PROCESSED_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
 
-# colocar o token do bot
-TELEGRAM_BOT_TOKEN = ''
+# O token deve ser inserido no arquivo .env
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 def init_db():
