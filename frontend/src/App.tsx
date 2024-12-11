@@ -19,6 +19,8 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false)
   const [showForm, setShowForm] = useState<boolean>(false)
   const [searchUsername, setSearchUsername] = useState<string>('')
+  const [tempCode, setTempCode] = useState<string>('')
+
   interface UserImage {
     id: string;
     ip: string;
@@ -53,10 +55,24 @@ function App() {
   }
 
   const handleFetchUserImages = async () => {
-    setSearchUsername(username)
-    const res = await fetch(`http://localhost:5000/user_images/${username}`)
+    const res = await fetch(`http://localhost:5000/user_images/${username}/${tempCode}`)
     const data = await res.json()
-    setUserImages(data)
+    if (data.error) {
+      alert(data.error)
+    } else {
+      setSearchUsername(username)
+      setUserImages(data)
+    }
+  }
+
+  const handleGenerateCode = async () => {
+    const res = await fetch(`http://localhost:5000/generate_code/${username}`)
+    const data = await res.json()
+    if (data.message) {
+      alert(data.message)
+    } else {
+      alert(data.error)
+    }
   }
 
   return (
@@ -86,6 +102,8 @@ function App() {
               {loading ? 'Enviando...' : 'Enviar'}
             </button>
           </form>
+          <button onClick={handleGenerateCode} className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Gerar Código Temporário</button>
+          <input type="text" placeholder="Código Temporário" value={tempCode} onChange={(e) => setTempCode(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
           <button onClick={handleFetchUserImages} className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Buscar Imagens Processadas</button>
           {userImages.length > 0 && (
             <div className="mt-4">
