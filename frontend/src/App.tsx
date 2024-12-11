@@ -18,6 +18,7 @@ function App() {
   const [response, setResponse] = useState<{ image_proc: string, ip: string, datetime: string } | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [showForm, setShowForm] = useState<boolean>(false)
+  const [searchUsername, setSearchUsername] = useState<string>('')
   interface UserImage {
     id: string;
     ip: string;
@@ -52,6 +53,7 @@ function App() {
   }
 
   const handleFetchUserImages = async () => {
+    setSearchUsername(username)
     const res = await fetch(`http://localhost:5000/user_images/${username}`)
     const data = await res.json()
     setUserImages(data)
@@ -101,7 +103,7 @@ function App() {
                     <tr key={image.id}>
                       <td className="border-b border-gray-300 py-2 px-4">{image.ip}</td>
                       <td className="border-b border-gray-300 py-2 px-4">{image.datetime}</td>
-                      <td className="border-b border-gray-300 py-2 px-4"><img src={`http://localhost:5000/image/uploaded/${username}/${image.filename}`} alt="Imagem Processada" className="w-24 h-auto" /></td>
+                      <td className="border-b border-gray-300 py-2 px-4"><img src={`http://localhost:5000/image/uploaded/${searchUsername}/${image.filename}`} alt="Imagem Processada" className="w-24 h-auto" /></td>
                     </tr>
                   ))}
                 </tbody>
