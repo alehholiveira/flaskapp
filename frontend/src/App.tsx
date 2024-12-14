@@ -1,13 +1,13 @@
 import { useState } from 'react'
 
 const Header = () => (
-  <header className="bg-green-500 text-white py-4">
-    <h1 className="text-center text-2xl font-bold">Serviço de Processamento de Imagens</h1>
+  <header className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-4 shadow-lg">
+    <h1 className="text-center text-3xl font-bold">Serviço de Processamento de Imagens</h1>
   </header>
 )
 
 const Footer = () => (
-  <footer className="bg-green-500 text-white py-4 mt-8">
+  <footer className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-4 mt-8 shadow-lg">
     <p className="text-center">© 2024 Image Processor AiotLab</p>
   </footer>
 )
@@ -21,6 +21,8 @@ function App() {
   const [searchUsername, setSearchUsername] = useState<string>('')
   const [tempCode, setTempCode] = useState<string>('')
   const [sendTelegram, setSendTelegram] = useState<boolean>(false)
+  const [userImages, setUserImages] = useState<UserImage[]>([])
+  const [codeGenerated, setCodeGenerated] = useState<boolean>(false)
 
   interface UserImage {
     id: string
@@ -28,8 +30,6 @@ function App() {
     datetime: string
     filename: string
   }
-
-  const [userImages, setUserImages] = useState<UserImage[]>([])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -72,6 +72,7 @@ function App() {
     const data = await res.json()
     if (data.message) {
       alert(data.message)
+      setCodeGenerated(true)
     } else {
       alert(data.error)
     }
@@ -90,8 +91,8 @@ function App() {
               <li>Envie uma mensagem qualquer para o bot.</li>
               <li>Volte para esta página e insira seu nome de usuário do Telegram.</li>
             </ol>
-            <img src="/images/qrcode.jpg" alt="QR Code do Bot" className="mx-auto mb-6 w-48 h-48 shadow-lg rounded-lg" />
-            <button onClick={() => setShowForm(true)} className="bg-green-500 text-white py-2 px-6 rounded-lg hover:bg-green-600 transition">
+            <img src="/images/qrcode.jpg" alt="QR Code do Bot" className="mx-auto mb-6 w-48 h-48 shadow-lg rounded-lg transition-transform transform hover:scale-110" />
+            <button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-2 px-6 rounded-lg hover:from-green-500 hover:to-blue-600 transition">
               Seguir Adiante
             </button>
           </div>
@@ -106,34 +107,29 @@ function App() {
                 <input type="text" placeholder="Nome de Usuário do Telegram" value={username} onChange={(e) => setUsername(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
               )}
               <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" required />
-              <button type="submit" className="mt-4 w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600" disabled={loading}>
+              <button type="submit" className="mt-4 w-full bg-gradient-to-r from-green-400 to-blue-500 text-white py-2 px-4 rounded hover:from-green-500 hover:to-blue-600 transition" disabled={loading}>
                 {loading ? 'Enviando...' : 'Enviar'}
               </button>
             </form>
-            <button onClick={handleGenerateCode} className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Gerar Código Temporário</button>
-            <input type="text" placeholder="Código Temporário" value={tempCode} onChange={(e) => setTempCode(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
-            <button onClick={handleFetchUserImages} className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Buscar Imagens Processadas</button>
+            <button onClick={handleGenerateCode} className="mt-4 w-full bg-gradient-to-r from-blue-400 to-purple-500 text-white py-2 px-4 rounded hover:from-blue-500 hover:to-purple-600 transition">Gerar Código Temporário</button>
+            {codeGenerated && (
+              <><input type="text" placeholder="Código Temporário" value={tempCode} onChange={(e) => setTempCode(e.target.value)} className="block w-full mb-2 p-2 border rounded mt-4" required /><button onClick={handleFetchUserImages} className="mt-4 w-full bg-gradient-to-r from-blue-400 to-purple-500 text-white py-2 px-4 rounded hover:from-blue-500 hover:to-purple-600 transition">Buscar Imagens Processadas</button></>
+            )}
             {userImages.length > 0 && (
               <div className="mt-4">
-                <h2 className="text-xl font-bold mb-4">Imagens Processadas Anteriormente</h2>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border-b-2 border-gray-300 py-2 px-4 bg-green-500 text-white">IP</th>
-                      <th className="border-b-2 border-gray-300 py-2 px-4 bg-green-500 text-white">Data/Hora</th>
-                      <th className="border-b-2 border-gray-300 py-2 px-4 bg-green-500 text-white">Imagem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {userImages.map((image) => (
-                      <tr key={image.id}>
-                        <td className="border-b border-gray-300 py-2 px-4">{image.ip}</td>
-                        <td className="border-b border-gray-300 py-2 px-4">{image.datetime}</td>
-                        <td className="border-b border-gray-300 py-2 px-4"><img src={`http://localhost:5000/image/uploaded/${searchUsername}/${image.filename}`} alt="Imagem Processada" className="w-24 h-auto" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <h2 className="text-xl font-bold mb-4">Imagens Processadas Anteriormente por @{searchUsername}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {userImages.map((image) => (
+                    <div key={image.id} className="border p-4 rounded-lg shadow-lg">
+                      <img src={`http://localhost:5000/image/uploaded/${searchUsername}/${image.filename}`} alt="Imagem Processada" className="w-full h-auto mb-2" />
+                      <p className="text-center text-gray-700">IP: {image.ip}</p>
+                      <p className="text-center text-gray-700">Data/Hora: {image.datetime}</p>
+                      <a href={`http://localhost:5000/image/processed/${searchUsername}/cartoon_${image.filename}`} download className="block text-center text-blue-500">cartoon</a>
+                      <a href={`http://localhost:5000/image/processed/${searchUsername}/gray_${image.filename}`} download className="block text-center text-blue-500">gray</a>
+                      <a href={`http://localhost:5000/image/processed/${searchUsername}/blur_${image.filename}`} download className="block text-center text-blue-500">Blur</a>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
