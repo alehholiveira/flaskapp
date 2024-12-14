@@ -18,12 +18,16 @@ load_dotenv()
 
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
+TEMP_FOLDER = 'temp'
+if not os.path.exists(TEMP_FOLDER):
+    os.makedirs(TEMP_FOLDER)
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 if not os.path.exists(PROCESSED_FOLDER):
     os.makedirs(PROCESSED_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
+app.config['TEMP_FOLDER'] = TEMP_FOLDER
 
 # O token deve ser inserido no arquivo .env
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -58,6 +62,13 @@ def processed_file(username, filename):
         return jsonify({'error': 'File not found'}), 404
     return send_file(file)
 
+@app.route('/image/temp/processed/<filename>')
+def processed_temp_file(filename):
+    file = os.path.join(app.config['TEMP_FOLDER'], 'processed', filename)
+    if not os.path.exists(file):
+        return jsonify({'error': 'File not found'}), 404
+    return send_file(file)
+
 @app.route('/image/uploaded/<username>/<filename>')
 def uploaded_file(username, filename):
     file = os.path.join(app.config['UPLOAD_FOLDER'], username, filename)
@@ -74,45 +85,59 @@ def upload_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    username = request.form['username'] 
-
-    chat_id = get_chat_id_by_username(username)
-    if not chat_id:
-        return jsonify({'error': 'Username not found in Telegram updates'}), 404
+    username = request.form.get('username', '')
+    send_telegram = request.form.get('send_telegram', 'false').lower() == 'true'
 
     filename = secure_filename(file.filename)
-    user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username)
-    processed_folder = os.path.join(app.config['PROCESSED_FOLDER'], username)
-    os.makedirs(user_folder, exist_ok=True)
-    os.makedirs(processed_folder, exist_ok=True)
-    file_path = os.path.join(user_folder, filename)
-    file.save(file_path)
 
-    client_ip = request.remote_addr
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    if username:
+        if send_telegram:
+            chat_id = get_chat_id_by_username(username)
+            if not chat_id:
+                return jsonify({'error': 'Username not found in Telegram updates'}), 404
+            
+            user_folder = os.path.join(app.config['UPLOAD_FOLDER'], username)
+            processed_folder = os.path.join(app.config['PROCESSED_FOLDER'], username)
+            os.makedirs(user_folder, exist_ok=True)
+            os.makedirs(processed_folder, exist_ok=True)
+            file_path = os.path.join(user_folder, filename)
+            
+            file.save(file_path)
+            client_ip = request.remote_addr
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            processed_image_paths = process_images(file_path, filename, processed_folder)
 
-    # Salvar no banco de dados
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO uploads (ip, datetime, username, filename, chat_id) VALUES (?, ?, ?, ?, ?)', (client_ip, current_time, username, filename, chat_id))
-    conn.commit()
-    conn.close()
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            cursor.execute('INSERT INTO uploads (ip, datetime, username, filename, chat_id) VALUES (?, ?, ?, ?, ?)', (client_ip, current_time, username, filename, chat_id))
+            conn.commit()
+            conn.close()
 
-    processed_image_paths = process_images(file_path, filename, processed_folder)
+            asyncio.run(send_images_via_telegram(chat_id, processed_image_paths))
+    else:
+        temp_folder = os.path.join(app.config['TEMP_FOLDER'], 'uploads')
+        processed_folder = os.path.join(app.config['TEMP_FOLDER'], 'processed')
+        os.makedirs(temp_folder, exist_ok=True)
+        os.makedirs(processed_folder, exist_ok=True)
+        file_path = os.path.join(temp_folder, filename)
+        file.save(file_path)
 
-    # Enviar imagens processadas via Telegram
-    asyncio.run(send_images_via_telegram(chat_id, processed_image_paths))
-
-    print(f'[{current_time}] {client_ip} uploaded {filename} and processed it to {processed_image_paths}')
+        client_ip = request.remote_addr
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        processed_image_paths = process_images(file_path, filename, processed_folder)
+        
+        for path in processed_image_paths:
+            temp_path = os.path.join(processed_folder, os.path.basename(path))
+            os.rename(path, temp_path)
 
     return jsonify({
         'filename': filename,
-        'image_proc': processed_image_paths[0],  # Retornar a primeira imagem processada para exibição
+        'processed_images': [os.path.relpath(path, app.config['PROCESSED_FOLDER']) for path in processed_image_paths],   # Retornar a primeira imagem processada para exibição
         'ip': client_ip,
         'datetime': current_time,
         'username': username,
     })
-
+    
 def process_images(filepath, filename, processed_folder):
     image = cv2.imread(filepath)
     processed_image_paths = []
