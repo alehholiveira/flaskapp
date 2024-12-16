@@ -1,3 +1,4 @@
+import json
 import os
 import cv2
 import sqlite3
@@ -93,6 +94,8 @@ def upload_image():
 
     username = request.form.get('username', '')
     send_telegram = request.form.get('send_telegram', 'false').lower() == 'true'
+    filters = request.form.get('filters', '[]')
+    filters = json.loads(filters)
 
     filename = secure_filename(file.filename)
 
@@ -111,7 +114,7 @@ def upload_image():
             file.save(file_path)
             client_ip = request.remote_addr
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            processed_image_paths = process_images(file_path, filename, processed_folder)
+            processed_image_paths = process_images(file_path, filename, processed_folder, filters)
 
             conn = sqlite3.connect('database.db')
             cursor = conn.cursor()
@@ -130,56 +133,52 @@ def upload_image():
 
         client_ip = request.remote_addr
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        processed_image_paths = process_images(file_path, filename, processed_folder)
-        
-        for path in processed_image_paths:
-            temp_path = os.path.join(processed_folder, os.path.basename(path))
-            os.rename(path, temp_path)
+        processed_image_paths = process_images(file_path, filename, processed_folder, filters)
 
     return jsonify({
         'filename': filename,
-        'processed_images': [os.path.relpath(path, app.config['PROCESSED_FOLDER']) for path in processed_image_paths],   # Retornar a primeira imagem processada para exibição
+        'processed_images': [os.path.relpath(path, app.config['PROCESSED_FOLDER']) for path in processed_image_paths],
         'ip': client_ip,
         'datetime': current_time,
         'username': username,
     })
     
-def process_images(filepath, filename, processed_folder):
+def process_images(filepath, filename, processed_folder, filters):
     image = cv2.imread(filepath)
     processed_image_paths = []
 
-    # Processamento 1: Cartoon
-    cartoon = process_cartoon(image)
-    cartoon_path = os.path.join(processed_folder, f'cartoon_{filename}')
-    cv2.imwrite(cartoon_path, cartoon)
-    processed_image_paths.append(cartoon_path)
+    if 'cartoon' in filters:
+        cartoon = process_cartoon(image)
+        cartoon_path = os.path.join(processed_folder, f'cartoon_{filename}')
+        cv2.imwrite(cartoon_path, cartoon)
+        processed_image_paths.append(cartoon_path)
 
-    # Processamento 2: Gray
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray_path = os.path.join(processed_folder, f'gray_{filename}')
-    cv2.imwrite(gray_path, gray)
-    processed_image_paths.append(gray_path)
+    if 'gray' in filters:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray_path = os.path.join(processed_folder, f'gray_{filename}')
+        cv2.imwrite(gray_path, gray)
+        processed_image_paths.append(gray_path)
 
-    # Processamento 3: Blur
-    blur = cv2.GaussianBlur(image, (15, 15), 0)
-    blur_path = os.path.join(processed_folder, f'blur_{filename}')
-    cv2.imwrite(blur_path, blur)
-    processed_image_paths.append(blur_path)
+    if 'blur' in filters:
+        blur = cv2.GaussianBlur(image, (15, 15), 0)
+        blur_path = os.path.join(processed_folder, f'blur_{filename}')
+        cv2.imwrite(blur_path, blur)
+        processed_image_paths.append(blur_path)
 
-    # Processamento 4: Detecção de Rostos
-    face_image = image.copy()
-    face_detected_path = detect_faces(face_image, filename, processed_folder)
-    processed_image_paths.append(face_detected_path)
+    if 'faces' in filters:
+        face_image = image.copy()
+        face_detected_path = detect_faces(face_image, filename, processed_folder)
+        processed_image_paths.append(face_detected_path)
 
-    # Processamento 5: Classificação de Imagem
-    classify_image_copy = image.copy()
-    classified_path = classify_image(classify_image_copy, filename, processed_folder)
-    processed_image_paths.append(classified_path)
+    if 'classified' in filters:
+        classify_image_copy = image.copy()
+        classified_path = classify_image(classify_image_copy, filename, processed_folder)
+        processed_image_paths.append(classified_path)
 
-    # Processamento 6: Conversão para Desenho a Lápis
-    sketch_image_copy = image.copy()
-    sketch_path = convert_to_pencil_sketch(sketch_image_copy, filename, processed_folder)
-    processed_image_paths.append(sketch_path)
+    if 'sketch' in filters:
+        sketch_image_copy = image.copy()
+        sketch_path = convert_to_pencil_sketch(sketch_image_copy, filename, processed_folder)
+        processed_image_paths.append(sketch_path)
 
     return processed_image_paths
 

@@ -23,6 +23,8 @@ function App() {
   const [sendTelegram, setSendTelegram] = useState<boolean>(false)
   const [userImages, setUserImages] = useState<UserImage[]>([])
   const [codeGenerated, setCodeGenerated] = useState<boolean>(false)
+  const [modalImage, setModalImage] = useState<string | null>(null)
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
 
   interface UserImage {
     id: string
@@ -37,6 +39,13 @@ function App() {
     }
   }
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target
+    setSelectedFilters((prev) =>
+      checked ? [...prev, value] : prev.filter((filter) => filter !== value)
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
@@ -46,6 +55,7 @@ function App() {
     }
     formData.append('username', sendTelegram ? username : '')
     formData.append('send_telegram', sendTelegram.toString())
+    formData.append('filters', JSON.stringify(selectedFilters))
 
     const res = await fetch('http://localhost:5000/upload', {
       method: 'POST',
@@ -78,6 +88,14 @@ function App() {
     }
   }
 
+  const openModal = (image: string) => {
+    setModalImage(`http://localhost:5000/image/processed/${image}`)
+  }
+
+  const closeModal = () => {
+    setModalImage(null)
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -107,11 +125,39 @@ function App() {
                 <input type="text" placeholder="Nome de Usuário do Telegram" value={username} onChange={(e) => setUsername(e.target.value)} className="block w-full mb-2 p-2 border rounded" required />
               )}
               <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" required />
+              <div className="mt-4">
+                <label className="block mb-2">
+                  <input type="checkbox" value="cartoon" onChange={handleFilterChange} className="mr-2" />
+                  Filtro Cartoon
+                </label>
+                <label className="block mb-2">
+                  <input type="checkbox" value="gray" onChange={handleFilterChange} className="mr-2" />
+                  Filtro Gray
+                </label>
+                <label className="block mb-2">
+                  <input type="checkbox" value="blur" onChange={handleFilterChange} className="mr-2" />
+                  Filtro Blur
+                </label>
+                <label className="block mb-2">
+                  <input type="checkbox" value="faces" onChange={handleFilterChange} className="mr-2" />
+                  Reconhecedor de Faces
+                </label>
+                <label className="block mb-2">
+                  <input type="checkbox" value="classified" onChange={handleFilterChange} className="mr-2" />
+                  Classificador de Imagens
+                </label>
+                <label className="block mb-2">
+                  <input type="checkbox" value="sketch" onChange={handleFilterChange} className="mr-2" />
+                  Processamento em Lápis
+                </label>
+              </div>
               <button type="submit" className="mt-4 w-full bg-gradient-to-r from-green-400 to-blue-500 text-white py-2 px-4 rounded hover:from-green-500 hover:to-blue-600 transition" disabled={loading}>
                 {loading ? 'Enviando...' : 'Enviar'}
               </button>
             </form>
-            <button onClick={handleGenerateCode} className="mt-4 w-full bg-gradient-to-r from-blue-400 to-purple-500 text-white py-2 px-4 rounded hover:from-blue-500 hover:to-purple-600 transition">Gerar Código Temporário</button>
+            {sendTelegram && (
+              <button onClick={handleGenerateCode} className="mt-4 w-full bg-gradient-to-r from-blue-400 to-purple-500 text-white py-2 px-4 rounded hover:from-blue-500 hover:to-purple-600 transition">Gerar Código Temporário</button>
+            )}
             {codeGenerated && (
               <><input type="text" placeholder="Código Temporário" value={tempCode} onChange={(e) => setTempCode(e.target.value)} className="block w-full mb-2 p-2 border rounded mt-4" required /><button onClick={handleFetchUserImages} className="mt-4 w-full bg-gradient-to-r from-blue-400 to-purple-500 text-white py-2 px-4 rounded hover:from-blue-500 hover:to-purple-600 transition">Buscar Imagens Processadas</button></>
             )}
@@ -141,14 +187,14 @@ function App() {
           </div>
         )}
         {response && response.processed_images && (
-          <div className="image-preview flex justify-around mt-4">
-            <div className="image-box border-2 border-dashed border-gray-300 w-72 h-48 flex items-center justify-center mr-4">
+          <div className="image-preview mt-4">
+            <div className="image-box border-2 border-dashed border-gray-300 w-72 h-48 flex items-center justify-center mb-4 mx-auto">
               <img src={URL.createObjectURL(file!)} alt="Imagem Original" className="max-w-full max-h-full" />
             </div>
-            <div className="image-box-response border-2 border-dashed border-gray-300 w-96 h-96 flex items-center justify-center overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {response.processed_images.map((image, index) => (
-                <div key={index} className="border p-4 rounded-lg">
-                  <img src={`http://localhost:5000/image/processed/${image}`} alt={`Imagem Processada ${index + 1}`} className="w-full h-auto mb-2" />
+                <div key={index} className="border p-4 rounded-lg shadow-lg">
+                  <img src={`http://localhost:5000/image/processed/${image}`} alt={`Imagem Processada ${index + 1}`} className="w-full h-auto mb-2 cursor-pointer" onClick={() => openModal(image)} />
                   <p className="text-center">Imagem Processada {index + 1}</p>
                   <a href={`http://localhost:5000/image/processed/${image}`} download className="block text-center text-blue-500">Baixar</a>
                 </div>
@@ -158,6 +204,18 @@ function App() {
         )}
       </main>
       <Footer />
+      {modalImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="relative bg-white p-4 rounded-lg shadow-lg">
+            <button onClick={closeModal} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img src={modalImage} alt="Imagem em Tamanho Grande" className="max-w-full max-h-full" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
