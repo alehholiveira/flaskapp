@@ -11,6 +11,12 @@ import requests
 from dotenv import load_dotenv
 import random
 import time
+import torch
+import torchvision.transforms as transforms
+from torchvision import models
+from PIL import Image
+from torchvision.models import vgg19
+from torchvision.models.feature_extraction import create_feature_extractor
 
 app = Flask(__name__)
 CORS(app)
@@ -161,10 +167,62 @@ def process_images(filepath, filename, processed_folder):
     processed_image_paths.append(blur_path)
 
     # Processamento 4: Detecção de Rostos
-    face_detected_path = detect_faces(image, filename, processed_folder)
+    face_image = image.copy()
+    face_detected_path = detect_faces(face_image, filename, processed_folder)
     processed_image_paths.append(face_detected_path)
 
+    # Processamento 5: Classificação de Imagem
+    classify_image_copy = image.copy()
+    classified_path = classify_image(classify_image_copy, filename, processed_folder)
+    processed_image_paths.append(classified_path)
+
+    # Processamento 6: Conversão para Desenho a Lápis
+    sketch_image_copy = image.copy()
+    sketch_path = convert_to_pencil_sketch(sketch_image_copy, filename, processed_folder)
+    processed_image_paths.append(sketch_path)
+
     return processed_image_paths
+
+def classify_image(image, filename, processed_folder):
+    # Carregar o modelo ResNet18 pré-treinado
+    model = models.resnet18(pretrained=True)
+    model.eval()
+
+    # Classes disponíveis no modelo ImageNet
+    class_names = requests.get("https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json").json()
+
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    # Converter imagem OpenCV para PIL
+    image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    input_tensor = preprocess(image_pil).unsqueeze(0)
+
+    with torch.no_grad():
+        output = model(input_tensor)
+        _, predicted_idx = torch.max(output, 1)
+        label = class_names[predicted_idx]
+
+    # Adicionar a label na imagem
+    labeled_image = image.copy()
+    cv2.putText(labeled_image, label, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+    classified_path = os.path.join(processed_folder, f'classified_{filename}')
+    cv2.imwrite(classified_path, labeled_image)
+
+    return classified_path
+
+def convert_to_pencil_sketch(image, filename, processed_folder):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    inv = cv2.bitwise_not(gray)
+    blur = cv2.GaussianBlur(inv, (21, 21), 0)
+    sketch = cv2.divide(gray, 255 - blur, scale=256)
+    sketch_path = os.path.join(processed_folder, f'sketch_{filename}')
+    cv2.imwrite(sketch_path, sketch)
+    return sketch_path
 
 def process_cartoon(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
