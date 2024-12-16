@@ -3,3 +3,6 @@
 /uploads
 /venv
 /__pycache__
+database.db
+.env
+/temp

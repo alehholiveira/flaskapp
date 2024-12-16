@@ -1,0 +1,249 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "description": "API para o serviço de processamento de imagens",
+      "version": "1.0.0",
+      "title": "Image Processor AiotLab"
+    },
+    "host": "localhost:5000",
+    "basePath": "/",
+    "tags": [
+      {
+        "name": "upload",
+        "description": "Operações de upload de imagem"
+      },
+      {
+        "name": "images",
+        "description": "Operações relacionadas a imagens"
+      },
+      {
+        "name": "user",
+        "description": "Operações relacionadas a usuários"
+      }
+    ],
+    "paths": {
+      "/upload": {
+        "post": {
+          "tags": ["upload"],
+          "summary": "Faz o upload de uma imagem",
+          "description": "",
+          "consumes": ["multipart/form-data"],
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "name": "image",
+              "in": "formData",
+              "description": "Arquivo de imagem para upload",
+              "required": true,
+              "type": "file"
+            },
+            {
+              "name": "username",
+              "in": "formData",
+              "description": "Nome de usuário do Telegram",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "name": "send_telegram",
+              "in": "formData",
+              "description": "Enviar via Telegram",
+              "required": false,
+              "type": "boolean"
+            },
+            {
+              "name": "filters",
+              "in": "formData",
+              "description": "Filtros a serem aplicados",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Upload bem-sucedido",
+              "examples": {
+                "application/json": {
+                  "filename": "example.jpg",
+                  "processed_images": [
+                    "processed/blur_example.jpg"
+                  ],
+                  "ip": "192.168.1.1",
+                  "datetime": "2024-12-16 20:47:30",
+                  "username": "example_user"
+                }
+              }
+            },
+            "400": {
+              "description": "Erro no upload"
+            }
+          }
+        }
+      },
+      "/image/processed/{username}/{filename}": {
+        "get": {
+          "tags": ["images"],
+          "summary": "Obtém uma imagem processada",
+          "description": "Retorna uma imagem processada pelo nome de usuário e nome do arquivo",
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "name": "username",
+              "in": "path",
+              "description": "Nome de usuário",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "filename",
+              "in": "path",
+              "description": "Nome do arquivo",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Imagem encontrada"
+            },
+            "404": {
+              "description": "Imagem não encontrada"
+            }
+          }
+        }
+      },
+      "/image/temp/processed/{filename}": {
+        "get": {
+          "tags": ["images"],
+          "summary": "Obtém uma imagem processada temporária",
+          "description": "Retorna uma imagem processada temporária pelo nome do arquivo",
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "name": "filename",
+              "in": "path",
+              "description": "Nome do arquivo",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Imagem encontrada"
+            },
+            "404": {
+              "description": "Imagem não encontrada"
+            }
+          }
+        }
+      },
+      "/image/uploaded/{username}/{filename}": {
+        "get": {
+          "tags": ["images"],
+          "summary": "Obtém uma imagem enviada",
+          "description": "Retorna uma imagem enviada pelo nome de usuário e nome do arquivo",
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "name": "username",
+              "in": "path",
+              "description": "Nome de usuário",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "filename",
+              "in": "path",
+              "description": "Nome do arquivo",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Imagem encontrada"
+            },
+            "404": {
+              "description": "Imagem não encontrada"
+            }
+          }
+        }
+      },
+      "/generate_code/{username}": {
+        "get": {
+          "tags": ["user"],
+          "summary": "Gera um código temporário",
+          "description": "Gera um código temporário para o usuário especificado",
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "name": "username",
+              "in": "path",
+              "description": "Nome de usuário",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Código gerado com sucesso",
+              "examples": {
+                "application/json": {
+                  "message": "Código gerado com sucesso! Verifique seu Telegram."
+                }
+              }
+            },
+            "404": {
+              "description": "Usuário não encontrado"
+            }
+          }
+        }
+      },
+      "/user_images/{username}/{code}": {
+        "get": {
+          "tags": ["user"],
+          "summary": "Obtém imagens de um usuário",
+          "description": "Retorna as imagens enviadas por um usuário específico usando um código temporário",
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "name": "username",
+              "in": "path",
+              "description": "Nome de usuário",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "code",
+              "in": "path",
+              "description": "Código temporário",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Imagens encontradas",
+              "examples": {
+                "application/json": [
+                  {
+                    "id": 1,
+                    "ip": "192.168.1.1",
+                    "datetime": "2024-12-16 20:47:30",
+                    "username": "example_user",
+                    "filename": "example.jpg"
+                  }
+                ]
+              }
+            },
+            "400": {
+              "description": "Código inválido ou expirado"
+            },
+            "404": {
+              "description": "Nenhuma imagem encontrada para este usuário"
+            }
+          }
+        }
+      }
+    }
+  }

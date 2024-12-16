@@ -1,0 +1,11 @@
+Flask
+opencv-python
+Werkzeug
+flask_cors
+python-telegram-bot
+requests
+python-dotenv
+torch
+torchvision
+Pillow
+flask-swagger-ui
