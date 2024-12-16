@@ -8,3 +8,4 @@ python-dotenv
 torch
 torchvision
 Pillow
+flask-swagger-ui
