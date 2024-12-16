@@ -5,7 +5,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Etapa 3: Copiar arquivos do projeto
-COPY package*.json ./
+COPY package*.json .
 
 # Etapa 4: Instalar dependências
 RUN npm install
