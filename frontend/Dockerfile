@@ -1,17 +1,23 @@
 # Etapa 1: Imagem base
-FROM denoland/deno:latest
+FROM node:18-alpine
 
 # Etapa 2: Definir diretório de trabalho
 WORKDIR /app
 
 # Etapa 3: Copiar arquivos do projeto
+COPY package*.json ./
+
+# Etapa 4: Instalar dependências
+RUN npm install
+
+# Etapa 5: Copiar o restante dos arquivos do projeto
 COPY . .
 
-# Etapa 4: Instalar dependências e construir o projeto
-RUN deno task build
+# Etapa 6: Construir o projeto
+RUN npm run build
 
-# Etapa 5: Expor porta
+# Etapa 7: Expor porta
 EXPOSE 5173
 
-# Etapa 6: Iniciar o servidor
-CMD ["deno", "task", "dev", "--host"]
+# Etapa 8: Iniciar o servidor
+CMD ["npm", "run", "dev", "--", "--host"]
