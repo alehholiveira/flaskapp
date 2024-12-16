@@ -160,6 +160,10 @@ def process_images(filepath, filename, processed_folder):
     cv2.imwrite(blur_path, blur)
     processed_image_paths.append(blur_path)
 
+    # Processamento 4: Detecção de Rostos
+    face_detected_path = detect_faces(image, filename, processed_folder)
+    processed_image_paths.append(face_detected_path)
+
     return processed_image_paths
 
 def process_cartoon(image):
@@ -252,6 +256,26 @@ def get_user_images(username, code):
         })
 
     return jsonify(images)
+
+def detect_faces(image, filename, processed_folder):
+    face_cascade = cv2.CascadeClassifier('cascades/haarcascade_frontalface_default.xml')
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Detectar rostos na imagem
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+    # Desenhar retângulos ou círculos ao redor dos rostos detectados
+    for (x, y, w, h) in faces:
+        center = (x + w // 2, y + h // 2)
+        radius = w // 2
+        cv2.circle(image, center, radius, (0, 255, 0), 2)  # Desenha um círculo verde
+
+    # Salvar a imagem processada com rostos detectados
+    face_detected_path = os.path.join(processed_folder, f'faces_{filename}')
+    cv2.imwrite(face_detected_path, image)
+
+    return face_detected_path
+
 
 if __name__ == '__main__':
     init_db()
